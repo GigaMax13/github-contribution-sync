@@ -38,9 +38,12 @@ export default async ({ execute, map, username, year }) => {
 
   console.log(`\n${commits.length} commits will be made.`);
 
-  const script = commits
-    .concat("git pull origin main\n", "git push -f origin main")
-    .join("");
+  const script = [
+    ...commits,
+    "git pull origin main\n",
+    "git push -f origin main\n",
+    "unset SYNC_REPO_TOKEN",
+  ].join("");
 
   fs.writeFile("script.sh", script, () => {
     console.log("\nFile was created successfully.");

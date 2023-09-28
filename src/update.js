@@ -28,28 +28,28 @@ const questions = [
   },
   {
     type: "list",
-    name: "shouldAskToken",
+    name: "shouldUpdateToken",
     message: "Would you like to update your GitHub token?",
     choices: [
       {
         name: "No",
-        value: true,
+        value: false,
       },
       {
         name: "Yes",
-        value: false,
+        value: true,
       },
     ],
-    default: true,
-    when: ({ isPrivateRepo }) => isPrivateRepo || SYNC_REPO_TOKEN,
+    default: false,
+    when: () => SYNC_REPO_TOKEN,
   },
   {
     type: "input",
     name: "token",
     message:
       "In order to fetch your repo commits history, please provide a GitHub token:",
-    when: ({ isPrivateRepo, shouldAskToken }) =>
-      isPrivateRepo && !shouldAskToken,
+    when: ({ isPrivateRepo, shouldUpdateToken }) =>
+      isPrivateRepo || shouldUpdateToken,
   },
   {
     type: "list",
@@ -91,11 +91,16 @@ const questions = [
   },
 ];
 
-const update = async ({ execute, save, token = SYNC_REPO_TOKEN }) => {
+const update = async ({
+  execute,
+  save,
+  shouldUpdateToken,
+  token = SYNC_REPO_TOKEN,
+}) => {
   const { map, username } = await git({ token });
   const year = new Date().getFullYear();
 
-  if (save) {
+  if (save || shouldUpdateToken) {
     fs.writeFile(".env", `SYNC_REPO_TOKEN=${token}`, (err) => {
       if (!err) {
         console.log("\n Git token saved successfully.");
