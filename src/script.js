@@ -3,10 +3,15 @@ import { parse } from "node-html-parser";
 import shell from "shelljs";
 import fs from "node:fs";
 
-export default async ({ username, year, execute }) => {
+import { COMMIT_MESSAGE } from "./git.js";
+
+const getCommitCount = (count, date, map) =>
+  map?.has(date) ? count - map.get(date) : count;
+
+export default async ({ execute, map, username, year }) => {
   // Returns contribution graph html for a full selected year.
   const { data } = await axios.get(
-    `https://github.com/users/${username}/contributions?tab=overview&from=${year}-01-01&to=${year}-12-31`
+    `https://github.com/users/${username}/contributions?tab=overview&from=${year}-01-01`
   );
 
   // Retrieves needed data from the html, loops over green squares with 1+ contributions,
@@ -17,15 +22,17 @@ export default async ({ username, year, execute }) => {
       date: attributes["data-date"],
       count: parseInt(attributes["data-level"]),
     }))
-    .filter(({ date, count }) => date && count > 0)
-    .flatMap(({ date, count }) =>
-      Array(count).fill(
-        `GIT_AUTHOR_DATE=${date}T12:00:00 GIT_COMMITTER_DATE=${date}T12:00:00 git commit --allow-empty -m "Rewriting History!" > /dev/null\n`
+    .filter(({ count, date }) => date && getCommitCount(count, date, map) > 0)
+    .flatMap(({ count, date }) =>
+      Array(getCommitCount(count, date, map)).fill(
+        `GIT_AUTHOR_DATE=${date}T12:00:00 GIT_COMMITTER_DATE=${date}T12:00:00 git commit --allow-empty -m "${username}${COMMIT_MESSAGE}" > /dev/null\n`
       )
     );
 
   if (!commits.length) {
-    console.log("No commits to be made.");
+    fs.unlink("script.sh", () => {
+      console.log("No commits to be made.");
+    });
     return;
   }
 

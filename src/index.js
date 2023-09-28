@@ -3,7 +3,6 @@ import inquirer from "inquirer";
 
 import script from "./script.js";
 
-// Define the questions for user input
 const questions = [
   {
     type: "input",
@@ -49,7 +48,6 @@ const questions = [
   },
 ];
 
-// Prompt the user with the questions and execute the script if confirmed
 inquirer.prompt(questions).then((answers) => {
   if (answers.confirm) {
     script(answers);

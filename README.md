@@ -12,7 +12,7 @@ GitHub Contribution Sync is a valuable tool designed to address a common scenari
 
 The primary purpose of GitHub Contribution Sync is to simplify this process. It allows developers to mirror their contributions from their personal GitHub accounts to a new, work-related account. By doing so, developers can maintain a clear separation between their personal and professional identities on GitHub while ensuring that their work and contributions are accurately reflected on their professional profiles.
 
-This tool streamlines the synchronization of contributions for a specific year, making it easy for developers to maintain a professional GitHub presence that aligns with their employment or contracting responsibilities. With GitHub Contribution Sync, developers can effortlessly showcase their contributions, code activity, and commitment to their projects, enhancing their professional reputation in the software development community.
+This tool streamlines the sync of contributions for a specific year, making it easy for developers to maintain a professional GitHub presence that aligns with their employment or contracting responsibilities. With GitHub Contribution Sync, developers can effortlessly showcase their contributions, code activity, and commitment to their projects, enhancing their professional reputation in the software development community.
 
 ## Getting Started
 
@@ -36,7 +36,7 @@ To get started with GitHub Contribution Sync, follow these steps:
    yarn
    ```
 
-5. **Configuration**: Initiate the configuration process by running the command:
+5. **Start**: Initiate the sync process by running the command:
 
    ```bash
    npm start
@@ -50,17 +50,39 @@ To get started with GitHub Contribution Sync, follow these steps:
 
    Follow the terminal prompts to provide the necessary information.
 
+6. **Update**: Once the sync is complete, you can run the following command to synchronize your new contributions:
+
+   ```bash
+   npm run update
+   ```
+
+   or
+
+   ```bash
+   yarn update
+   ```
+
+   **Note**: The `update` script will only work after a fist sync by running the `start` script.
+
 ## Configuration Options
 
-You can customize your synchronization using the following configuration options:
+You can customize your sync using the following configuration options:
+
+### Start
 
 - **Username**: Enter the GitHub username of the user whose contributions you want to mirror.
+- **Year**: Specify the year you wish to synchronize. The tool currently supports sync for a single year.
+- **Execution**: Choose whether to generate a `script.sh` file only or both generate and execute the script. Set to `true` for generation and execution.
+- **Confirmation**: Confirm your readiness to proceed with the sync.
 
-- **Year**: Specify the year you wish to synchronize. The tool currently supports synchronization for a single year.
+### Update
 
-- **Execution**: Choose whether to generate a `script.sh` file only or both generate and execute the script. Set to `false` for generating without execution.
-
-- **Confirmation**: Confirm your readiness to proceed with the synchronization.
+- **Private**: Choose whether the sync repo is private or not (the repo you created with this template). Set to `true` if the repo is private.
+- **Set GitHub token**: Enter a GitHub token to authenticate the GitHub API requests. Only applicable for private sync repos.
+- **Save GitHub token**: Choose whether to save the GitHub token for future use. Set to `true` to save the token.
+- **Update GitHub token**: Update the GitHub token if you have already set one.
+- **Execution**: Choose whether to generate a `script.sh` file only or both generate and execute the script. Set to `true` for generation and execution.
+- **Confirmation**: Confirm your readiness to proceed with the sync.
 
 ## Security Assurance
 
@@ -69,6 +91,8 @@ The tool operates securely by design:
 - **Open Source**: The entire source code is available for inspection in the [code](src/index.js) file. It's lightweight and relies on minimal dependencies.
 
 - **Privacy**: It only accesses publicly available data from GitHub contribution graphs. It does not access private commits or issues.
+
+- **Authentication**: It uses a GitHub token to authenticate API requests. The token is stored locally on your computer and is not shared with anyone.
 
 ## Contributions Welcome
 
