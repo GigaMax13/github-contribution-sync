@@ -5,8 +5,19 @@ import fs from "node:fs";
 
 import { COMMIT_MESSAGE } from "./git.js";
 
-const getCommitCount = (count, date, map) =>
-  map?.has(date) ? count - map.get(date) : count;
+const getCommitCount = (count, date, map, debug = false) => {
+  const total = map?.has(date) ? count - map.get(date) : count;
+
+  if (debug && count > 0) {
+    console.log({
+      date,
+      count,
+      map: map.get(date),
+    });
+  }
+
+  return total;
+};
 
 export default async ({ execute, map, username, year }) => {
   // Returns contribution graph html for a full selected year.
@@ -18,10 +29,19 @@ export default async ({ execute, map, username, year }) => {
   // and produces a multi-line string that can be run as a bash command.
   const commits = parse(data)
     .querySelectorAll(".ContributionCalendar-day")
-    .map(({ attributes }) => ({
-      date: attributes["data-date"],
-      count: parseInt(attributes["data-level"]),
-    }))
+    .map((element) => {
+      const { attributes, childNodes } = element;
+      const date = attributes["data-date"];
+      const level = parseInt(attributes["data-level"]) ?? 0;
+      const contributions =
+        level > 0 ? childNodes?.[0]?.rawText?.replace(/(\d+)(.+)/g, "$1") : 0;
+      const count = Math.max(level, contributions);
+
+      return {
+        date,
+        count,
+      };
+    })
     .filter(({ count, date }) => date && getCommitCount(count, date, map) > 0)
     .flatMap(({ count, date }) =>
       Array(getCommitCount(count, date, map)).fill(
