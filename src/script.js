@@ -32,9 +32,10 @@ export default async ({ execute, map, username, year }) => {
     .map((element) => {
       const { attributes, childNodes } = element;
       const date = attributes["data-date"];
-      const level = parseInt(attributes["data-level"]) ?? 0;
-      const contributions =
-        level > 0 ? childNodes?.[0]?.rawText?.replace(/(\d+)(.+)/g, "$1") : 0;
+      const level = parseInt(attributes["data-level"] ?? 0);
+      const contributions = parseInt(
+        childNodes?.[0]?.rawText?.replace(/(\d+)(.+)/g, "$1") ?? 0
+      );
       const count = Math.max(level, contributions);
 
       return {
