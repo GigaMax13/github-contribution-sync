@@ -20,10 +20,12 @@ const getCommitCount = (count, date, map, debug = false) => {
 };
 
 export default async ({ execute, map, username, year }) => {
+  const url = `https://github.com/users/${username}/contributions?tab=overview&from=${year}-01-01`;
+
+  console.log(`\nFetching GitHub public data from:\n\n${url}`);
+
   // Returns contribution graph html for a full selected year.
-  const { data } = await axios.get(
-    `https://github.com/users/${username}/contributions?tab=overview&from=${year}-01-01`
-  );
+  const { data } = await axios.get(url);
 
   // Retrieves needed data from the html, loops over green squares with 1+ contributions,
   // and produces a multi-line string that can be run as a bash command.
