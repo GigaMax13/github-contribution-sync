@@ -1,14 +1,13 @@
-import axios from "axios";
-import { parse } from "node-html-parser";
 import shell from "shelljs";
 import fs from "node:fs";
+import puppeteer from "puppeteer";
 
 import { COMMIT_MESSAGE } from "./git.js";
 
 const getCommitCount = (count, date, map, debug = false) => {
   const total = map?.has(date) ? count - map.get(date) : count;
 
-  if (debug && count > 0) {
+  if (debug && map && count > 0) {
     console.log({
       date,
       count,
@@ -20,35 +19,53 @@ const getCommitCount = (count, date, map, debug = false) => {
 };
 
 export default async ({ execute, map, username, year }) => {
-  const url = `https://github.com/users/${username}/contributions?tab=overview&from=${year}-01-01`;
+  const browser = await puppeteer.launch({ headless: true, timeout: 60000 });
+  const pages = await browser.pages();
+  const page = pages[0];
+  await page.goto(
+    `https://github.com/${username}?tab=overview&from=${year}-01-01`
+  );
 
-  console.log(`\nFetching GitHub public data from:\n\n${url}`);
+  await page.waitForSelector(".ContributionCalendar-day");
 
-  // Returns contribution graph html for a full selected year.
-  const { data } = await axios.get(url);
+  const elements = await page.$$(".ContributionCalendar-day");
 
-  // Retrieves needed data from the html, loops over green squares with 1+ contributions,
-  // and produces a multi-line string that can be run as a bash command.
-  const commits = parse(data)
-    .querySelectorAll(".ContributionCalendar-day")
-    .map((element) => {
-      const { attributes, childNodes } = element;
-      const date = attributes["data-date"];
-      const level = parseInt(attributes["data-level"] ?? 0);
-      const contributions = parseInt(
-        childNodes?.[0]?.rawText?.replace(/(\d+)(.+)/g, "$1") ?? 0
-      );
-      const count = Math.max(level, contributions);
+  // Extract the aria-labelledby attribute for each element
+  const ariaLabels = [];
+  for (const element of elements) {
+    const id = await element.evaluate((node) =>
+      node.getAttribute("aria-labelledby")
+    );
+    const date = await element.evaluate((node) =>
+      node.getAttribute("data-date")
+    );
+    ariaLabels.push({
+      date,
+      id,
+    });
+  }
 
-      return {
+  const contributions = [];
+  for (const { date, id } of ariaLabels) {
+    const referencedElement = await page.$(`#${id}`);
+    if (referencedElement) {
+      const text = await referencedElement.evaluate((node) => node.innerText);
+
+      // Attempt to extract the number of contributions using regex
+      const match = text.match(/(\d+) contribution/);
+      contributions.push({
         date,
-        count,
-      };
-    })
-    .filter(({ count, date }) => date && getCommitCount(count, date, map) > 0)
+        count: match ? parseInt(match[1], 10) : 0,
+      });
+    }
+  }
+
+  const commits = contributions
+    .filter(({ count, date }) => getCommitCount(count, date, map) > 0)
+    .sort((a, b) => new Date(a.date) - new Date(b.date))
     .flatMap(({ count, date }) =>
       Array(getCommitCount(count, date, map)).fill(
-        `GIT_AUTHOR_DATE=${date}T12:00:00 GIT_COMMITTER_DATE=${date}T12:00:00 git commit --allow-empty -m "${username}${COMMIT_MESSAGE}" > /dev/null\n`
+        `GIT_AUTHOR_DATE=${date}T11:00:00 GIT_COMMITTER_DATE=${date}T11:00:00 git commit --allow-empty -m "${username}${COMMIT_MESSAGE}" > /dev/null\n`
       )
     );
 
@@ -56,7 +73,7 @@ export default async ({ execute, map, username, year }) => {
     fs.unlink("script.sh", () => {
       console.log("No commits to be made.");
     });
-    return;
+    return await browser.close();
   }
 
   console.log(`\n${commits.length} commits will be made.`);
@@ -76,4 +93,6 @@ export default async ({ execute, map, username, year }) => {
       shell.exec("sh ./script.sh");
     }
   });
+
+  await browser.close();
 };
